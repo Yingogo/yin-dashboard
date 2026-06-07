@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050809" />
+    <title>YIN Dashboard</title>
+    <link rel="stylesheet" href="/styles.css?v=30" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <a class="brand-logo" href="/" aria-label="YIN Dashboard">
+            <span class="brand-yin">YIN</span>
+            <span class="brand-dashboard">Dashboard</span>
+          </a>
+          <p class="subtitle">MNQ · MGC · MCL　/　多因子方向引擎</p>
+        </div>
+        <div class="top-actions">
+          <section id="fear-greed-widget" class="fear-greed-widget loading" aria-label="CNN Fear and Greed Index"></section>
+          <div class="market-clock">
+            <span class="pulse"></span>
+            <div><small>NEW YORK</small><strong id="ny-clock">--:--:--</strong></div>
+          </div>
+          <button id="refresh-button" type="button">立即更新</button>
+        </div>
+      </header>
+
+      <section class="summary-strip" aria-label="盤中摘要">
+        <div><span>動態權重綜合方向</span><strong id="market-regime">計算中</strong></div>
+        <div><span>綜合方向明確</span><strong id="aligned-count">--</strong></div>
+        <div><span>波動狀態</span><strong id="risk-level">--</strong></div>
+        <div><span>資料更新</span><strong id="updated-at">--</strong></div>
+      </section>
+
+      <section class="decision-banner">
+        <span>綜合原則</span>
+        <p>平常使用目前資料 70%／預測 30%；指定重大事件進入 72 小時窗口時切換為目前資料 40%／預測 60%。黃金亦會依 DXY 與 10Y Yield 重大變動切換。</p>
+      </section>
+
+      <section class="event-panel" aria-label="Upcoming economic data releases">
+        <div class="event-panel-head">
+          <div>
+            <p class="eyebrow">UPCOMING DATA RELEASES</p>
+            <h2>重要數據公布時間與提前提醒</h2>
+          </div>
+          <div class="event-links">
+            <span>全部為台灣時間</span>
+            <a href="https://rili.jin10.com/" target="_blank" rel="noopener noreferrer">金十日曆 ↗</a>
+            <a href="https://www.bls.gov/schedule/news_release/bls.ics" target="_blank" rel="noopener noreferrer">BLS 行事曆 ↗</a>
+          </div>
+        </div>
+        <div id="event-calendar" class="event-calendar">
+          <div class="event-empty">正在讀取重要數據行事曆…</div>
+        </div>
+        <p class="event-note">預設只顯示未來 3 天內事件；較遠資料可按「查看 3 天後的數據」展開。公布時間仍以官方臨時更新為準。</p>
+      </section>
+
+      <section id="market-grid" class="market-grid" aria-live="polite"></section>
+
+      <details class="strength-details">
+        <summary>
+          <span><b>方向強度怎麼看</b><small>強度是加權訊號幅度，不是勝率</small></span>
+          <strong>STRENGTH GUIDE</strong>
+        </summary>
+        <section class="strength-guide" aria-label="方向強度分級">
+          <div><b>0–24</b><span>多空拉鋸</span></div>
+          <div><b>25–39</b><span>稍微偏多／偏空</span></div>
+          <div><b>40–59</b><span>偏多／偏空</span></div>
+          <div><b>60–79</b><span>強烈偏多／偏空</span></div>
+          <div><b>80–100</b><span>極度偏多／偏空</span></div>
+        </section>
+      </details>
+
+      <details class="model-details">
+        <summary>
+          <span><b>模型判斷方式與週期權重</b><small>5 分、15 分、1 小時、日線如何計算</small></span>
+          <strong>MODEL INFO</strong>
+        </summary>
+        <div class="lower-grid">
+          <article class="panel methodology">
+            <div class="panel-heading">
+              <div><p class="eyebrow">TIMEFRAME ENGINE</p><h2>各週期怎麼判斷</h2></div>
+              <span class="model-tag">獨立評分 -100 至 +100</span>
+            </div>
+            <div class="factor-grid">
+              <div><b>價格與 EMA 9</b><span>價格在 EMA 9 上方加分，下方扣分。</span></div>
+              <div><b>EMA 9 / 21 / 50</b><span>短均線依序在長均線上方偏多，反向排列偏空。</span></div>
+              <div><b>RSI 14 與動能</b><span>RSI ≥55、近 5 根上漲加分；RSI ≤45、近 5 根下跌扣分。</span></div>
+            </div>
+          </article>
+          <article class="panel checklist">
+            <div class="panel-heading"><div><p class="eyebrow">TIMEFRAME WEIGHT</p><h2>週期權重</h2></div></div>
+            <ol>
+              <li><span>40%</span>15 分鐘：盤中主要方向。</li>
+              <li><span>30%</span>1 小時：較大級別背景。</li>
+              <li><span>20%</span>5 分鐘：最近價格反應。</li>
+              <li><span>10%</span>日線：長期背景過濾。</li>
+            </ol>
+          </article>
+        </div>
+      </details>
+
+      <footer>
+        <p>此工具只呈現機率式方向判斷，不構成個人化投資或下單建議。方向強度不是勝率。</p>
+        <p>行情與資料可能延遲；休市時顯示上一交易時段狀態。</p>
+      </footer>
+    </main>
+    <script src="/app.js?v=30"></script>
+  </body>
+</html>
