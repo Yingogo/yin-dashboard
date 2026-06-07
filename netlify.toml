@@ -1,5 +1,5 @@
 [build]
-  publish = "."
+  publish = "public"
   functions = "netlify/functions"
 
 [[redirects]]
@@ -10,6 +10,11 @@
 [[redirects]]
   from = "/api/context"
   to = "/.netlify/functions/api?route=context"
+  status = 200
+
+[[redirects]]
+  from = "/api/history"
+  to = "/.netlify/functions/api?route=history"
   status = 200
 
 [[redirects]]

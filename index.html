@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#050809" />
     <title>YIN Dashboard</title>
-    <link rel="stylesheet" href="/styles.css?v=36" />
+    <link rel="stylesheet" href="/styles.css?v=37" />
   </head>
   <body>
     <div class="noise"></div>
@@ -62,6 +62,32 @@
         <p class="event-note">預設只顯示未來 3 天內事件；較遠資料可按「查看 3 天後的數據」展開。公布時間仍以官方臨時更新為準。</p>
       </section>
 
+      <section class="history-panel" aria-label="Historical technical review">
+        <div class="history-head">
+          <div>
+            <p class="eyebrow">HISTORICAL REVIEW</p>
+            <h2>歷史時間點多空回顧</h2>
+            <p>選擇日期與時間，回算當時 5 分、15 分、1 小時、日線的技術分析（目前資料）。</p>
+          </div>
+          <div class="history-controls">
+            <label>日期 <input id="history-date" type="date" /></label>
+            <label>時間 <input id="history-time" type="time" step="300" /></label>
+            <label>商品
+              <select id="history-market">
+                <option value="ALL">全部</option>
+                <option value="MNQ">MNQ</option>
+                <option value="MGC">MGC</option>
+                <option value="MCL">MCL</option>
+              </select>
+            </label>
+            <button id="history-button" type="button">回顧多空</button>
+          </div>
+        </div>
+        <div id="history-results" class="history-results">
+          <p class="history-empty">尚未回顧。時間以台灣時間計算，只使用該時間點以前的 K 線。</p>
+        </div>
+      </section>
+
       <section id="market-grid" class="market-grid" aria-live="polite"></section>
 
       <details class="strength-details">
@@ -112,6 +138,6 @@
         <p>行情與資料可能延遲；休市時顯示上一交易時段狀態。</p>
       </footer>
     </main>
-    <script src="/app.js?v=34"></script>
+    <script src="/app.js?v=35"></script>
   </body>
 </html>

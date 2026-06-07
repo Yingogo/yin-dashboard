@@ -503,6 +503,95 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 .event-empty { grid-column: 1 / -1; padding: 12px; border: 1px dashed var(--line); text-align: center; }
 .event-note { margin: 10px 0 0; line-height: 1.5; }
 
+.history-panel {
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid rgba(44, 140, 255, .28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(44, 140, 255, .07), rgba(8, 14, 21, .96) 46%);
+  box-shadow: var(--shadow);
+}
+.history-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.history-head h2 { margin: 3px 0 0; color: var(--text); font-size: 20px; }
+.history-head p { margin: 6px 0 0; color: #c3d0db; font-size: 12px; line-height: 1.55; }
+.history-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.history-controls label {
+  display: grid;
+  gap: 4px;
+  color: #b8c8d6;
+  font: 700 10px Consolas, monospace;
+}
+.history-controls input,
+.history-controls select {
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #f4f8fc;
+  background: #0a1119;
+  font: 700 12px "Segoe UI", sans-serif;
+}
+.history-controls button { min-height: 34px; align-self: end; }
+.history-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.history-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line-soft);
+  border-radius: 8px;
+  color: #c3d0db;
+  background: rgba(8, 14, 21, .72);
+  font-size: 12px;
+}
+.history-card {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(12, 19, 29, .98), rgba(6, 11, 17, .98));
+}
+.history-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+.history-card-head span,
+.history-card-head strong,
+.history-card-head small,
+.history-score b,
+.history-score em { display: block; }
+.history-card-head span { color: var(--accent); font: 800 11px Consolas, monospace; letter-spacing: .12em; }
+.history-card-head strong { margin-top: 4px; color: #fff; font-size: 16px; }
+.history-card-head small { margin-top: 4px; color: #b8c8d6; font-size: 10px; }
+.history-score { min-width: 76px; text-align: right; }
+.history-score b { color: currentColor; font-size: 17px; white-space: nowrap; }
+.history-score em { margin-top: 4px; color: #dce6ee; font: 800 13px Consolas, monospace; }
+.history-score.positive { color: var(--green); }
+.history-score.negative { color: var(--red); }
+.history-score.neutral { color: var(--amber); }
+.history-timeframes { margin-bottom: 10px; }
+.history-card p {
+  margin: 0;
+  color: #c3d0db;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
 .market-card,
 .factor-panel,
 .panel {
@@ -1356,7 +1445,10 @@ footer p { max-width: 720px; margin: 0; }
   .top-actions { width: 100%; flex-basis: 100%; }
   .fear-greed-widget { width: 100%; flex: 1; }
   .market-grid,
-  .factor-board { grid-template-columns: 1fr; }
+  .factor-board,
+  .history-results { grid-template-columns: 1fr; }
+  .history-head { align-items: flex-start; flex-direction: column; }
+  .history-controls { justify-content: flex-start; }
   .market-card { min-height: auto; }
   .asset-head { min-height: auto; }
   .decision-box { min-height: auto; }
@@ -1406,6 +1498,15 @@ footer p { max-width: 720px; margin: 0; }
   .event-reminder b { font-size: 10px; line-height: 1.45; }
   .event-note,
   .event-empty { font-size: 11px; line-height: 1.6; }
+  .history-panel { padding: 14px; }
+  .history-head h2 { font-size: 19px; }
+  .history-controls { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .history-controls label,
+  .history-controls button { width: 100%; }
+  .history-controls button { grid-column: 1 / -1; }
+  .history-card-head { align-items: flex-start; }
+  .history-card-head strong { font-size: 15px; }
+  .history-timeframes { grid-template-columns: 1fr 1fr; }
   .near-event-grid,
   .later-event-grid { grid-template-columns: 1fr; }
   .factor-columns { display: none; }

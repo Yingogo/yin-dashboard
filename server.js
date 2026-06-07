@@ -155,6 +155,70 @@ async function fetchTimeframe(symbol, timeframe) {
   return parseChart(await fetchJson(endpoint));
 }
 
+async function fetchChartWindow(symbol, interval, startMs, endMs) {
+  const endpoint =
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
+    `?period1=${Math.floor(startMs / 1000)}&period2=${Math.floor(endMs / 1000)}` +
+    `&interval=${interval}&includePrePost=true&events=div%2Csplits`;
+  return parseChart(await fetchJson(endpoint));
+}
+
+function bucketBars(bars, minutes) {
+  const bucketMs = minutes * 60 * 1000;
+  const buckets = new Map();
+  bars.forEach((bar) => {
+    const time = Math.floor(bar.time / bucketMs) * bucketMs;
+    let bucket = buckets.get(time);
+    if (!bucket) {
+      bucket = { time, open: bar.open, high: bar.high, low: bar.low, close: bar.close, volume: 0 };
+      buckets.set(time, bucket);
+    }
+    bucket.high = Math.max(bucket.high, bar.high);
+    bucket.low = Math.min(bucket.low, bar.low);
+    bucket.close = bar.close;
+    bucket.volume += bar.volume || 0;
+  });
+  return Array.from(buckets.values()).sort((a, b) => a.time - b.time);
+}
+
+function utcDateKey(time) {
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+async function fetchHistoricalSeries(symbol, atMs) {
+  const intradaySymbol = symbol;
+  const dailySymbol = symbol === "MCL=F" ? "CL=F" : symbol;
+  const intradayStart = atMs - 10 * 24 * 60 * 60 * 1000;
+  const intradayEnd = atMs + 5 * 60 * 1000;
+  const dailyStart = atMs - 370 * 24 * 60 * 60 * 1000;
+  const dailyEnd = atMs + 24 * 60 * 60 * 1000;
+  const [intraday, daily] = await Promise.all([
+    fetchChartWindow(intradaySymbol, "5m", intradayStart, intradayEnd),
+    fetchChartWindow(dailySymbol, "1d", dailyStart, dailyEnd)
+  ]);
+  const m5 = intraday.bars.filter((bar) => bar.time <= atMs);
+  const m15 = bucketBars(m5, 15).filter((bar) => bar.time <= atMs);
+  const h1 = bucketBars(m5, 60).filter((bar) => bar.time <= atMs);
+  const targetDate = utcDateKey(atMs);
+  const previousDaily = daily.bars.filter((bar) => utcDateKey(bar.time) < targetDate);
+  const targetDayBars = m5.filter((bar) => utcDateKey(bar.time) === targetDate);
+  const d1 = previousDaily.slice();
+  if (targetDayBars.length) {
+    d1.push({
+      time: atMs,
+      open: targetDayBars[0].open,
+      high: Math.max(...targetDayBars.map((bar) => bar.high)),
+      low: Math.min(...targetDayBars.map((bar) => bar.low)),
+      close: targetDayBars.at(-1).close,
+      volume: targetDayBars.reduce((sum, bar) => sum + (bar.volume || 0), 0)
+    });
+  }
+  return {
+    series: { m5, m15, h1, d1 },
+    meta: intraday.meta
+  };
+}
+
 async function fetchDailyContext(symbol) {
   const endpoint =
     `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
@@ -479,6 +543,36 @@ async function handleMarketData(res, url) {
   }
 }
 
+async function handleHistoryData(res, url) {
+  const symbol = url.searchParams.get("symbol");
+  const at = url.searchParams.get("at");
+  const atMs = Date.parse(at);
+  if (!SYMBOLS.has(symbol)) {
+    send(res, 400, JSON.stringify({ error: "不支援的商品" }), "application/json; charset=utf-8");
+    return;
+  }
+  if (!Number.isFinite(atMs)) {
+    send(res, 400, JSON.stringify({ error: "請提供有效時間" }), "application/json; charset=utf-8");
+    return;
+  }
+  try {
+    const { series, meta } = await fetchHistoricalSeries(symbol, atMs);
+    send(res, 200, JSON.stringify({
+      symbol,
+      at: atMs,
+      currency: meta.currency || "USD",
+      exchange: meta.exchangeName || "",
+      series,
+      fetchedAt: Date.now(),
+      note: "歷史回顧僅使用指定時間以前的 K 線資料"
+    }), "application/json; charset=utf-8");
+  } catch (error) {
+    send(res, 502, JSON.stringify({
+      error: error.message || "歷史資料讀取失敗"
+    }), "application/json; charset=utf-8");
+  }
+}
+
 function serveStatic(res, pathname) {
   const requestPath = pathname === "/" ? "/index.html" : pathname;
   const normalized = path.normalize(requestPath).replace(/^(\.\.[/\\])+/, "");
@@ -505,6 +599,10 @@ function requestHandler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   if (url.pathname === "/api/market") {
     handleMarketData(res, url);
+    return;
+  }
+  if (url.pathname === "/api/history") {
+    handleHistoryData(res, url);
     return;
   }
   if (url.pathname === "/api/context") {

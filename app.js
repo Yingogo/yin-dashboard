@@ -635,6 +635,94 @@ function timeframeBlock(title, badge, description, scores, predicted = false) {
   </section>`;
 }
 
+function strengthFromScore(score) {
+  const tone = score >= 20 ? "positive" : score <= -20 ? "negative" : "neutral";
+  const confidence = Math.round(clamp(Math.abs(score), 20, 85));
+  return {
+    tone,
+    confidence,
+    text: directionStrength(tone, confidence)
+  };
+}
+
+function renderHistoryCard(market, payload) {
+  const scores = {
+    m5: scoreTimeframe(payload.series.m5),
+    m15: scoreTimeframe(payload.series.m15),
+    h1: scoreTimeframe(payload.series.h1),
+    d1: scoreTimeframe(payload.series.d1)
+  };
+  const technical = technicalScore(scores);
+  const strength = strengthFromScore(technical);
+  const atText = new Date(payload.at).toLocaleString("zh-TW", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  });
+  return `<article class="history-card" style="--accent:${market.accent}">
+    <div class="history-card-head">
+      <div><span>${market.ticker}</span><strong>${market.name}</strong><small>${atText}｜台灣時間</small></div>
+      <div class="history-score ${strength.tone}"><b>${strength.text}</b><em>${technical >= 0 ? "+" : ""}${Math.round(technical)}</em></div>
+    </div>
+    <div class="timeframe-grid history-timeframes">
+      ${timeframeChip("m5", "5 分", scores.m5, "歷史 K 線")}
+      ${timeframeChip("m15", "15 分", scores.m15, "歷史 K 線")}
+      ${timeframeChip("h1", "1 小時", scores.h1, "歷史 K 線")}
+      ${timeframeChip("d1", "日線", scores.d1, "歷史 K 線")}
+    </div>
+    <p>技術分析權重：5 分 20%＋15 分 40%＋1 小時 30%＋日線 10%。此回顧不納入當時新聞、FedWatch 或 Fear & Greed 歷史值。</p>
+  </article>`;
+}
+
+function setHistoryDefaults() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, "0");
+  document.querySelector("#history-date").value = `${yyyy}-${mm}-${dd}`;
+  document.querySelector("#history-time").value = `${hh}:${min}`;
+}
+
+async function loadHistoryReview() {
+  const button = document.querySelector("#history-button");
+  const results = document.querySelector("#history-results");
+  const date = document.querySelector("#history-date").value;
+  const time = document.querySelector("#history-time").value;
+  const selected = document.querySelector("#history-market").value;
+  if (!date || !time) {
+    results.innerHTML = `<p class="history-empty">請先選擇日期與時間。</p>`;
+    return;
+  }
+  const at = new Date(`${date}T${time}:00`);
+  if (!Number.isFinite(at.getTime())) {
+    results.innerHTML = `<p class="history-empty">時間格式不正確。</p>`;
+    return;
+  }
+  const targets = MARKETS.filter((market) => selected === "ALL" || market.ticker === selected);
+  button.disabled = true;
+  button.textContent = "回顧中";
+  results.innerHTML = `<p class="history-empty">正在讀取歷史 K 線...</p>`;
+  const cards = await Promise.all(targets.map(async (market) => {
+    try {
+      const response = await fetch(`/api/history?symbol=${encodeURIComponent(market.symbol)}&at=${encodeURIComponent(at.toISOString())}`);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "歷史資料讀取失敗");
+      if (!payload.series?.m5?.length || !payload.series?.h1?.length || !payload.series?.d1?.length) {
+        throw new Error("該時間點歷史 K 線不足");
+      }
+      return renderHistoryCard(market, payload);
+    } catch (error) {
+      return `<article class="history-card error-card" style="--accent:${market.accent}">
+        <div><p class="eyebrow">${market.ticker} HISTORY ERROR</p><h2>${market.name}</h2><p>${error.message}</p></div>
+      </article>`;
+    }
+  }));
+  results.innerHTML = cards.join("");
+  button.disabled = false;
+  button.textContent = "回顧多空";
+}
+
 function buildLogicSummary(item) {
   const available = item.factors
     .filter((factor) => factor.score !== null && factor.weight > 0)
@@ -921,8 +1009,10 @@ function updateClock() {
 }
 
 document.querySelector("#refresh-button").addEventListener("click", loadMarkets);
+document.querySelector("#history-button").addEventListener("click", loadHistoryReview);
 setInterval(updateClock, 1000);
 setInterval(renderEventCalendar, 60 * 1000);
 setInterval(loadMarkets, 5 * 60 * 1000);
+setHistoryDefaults();
 updateClock();
 loadMarkets();
