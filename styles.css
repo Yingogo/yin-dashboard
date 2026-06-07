@@ -580,7 +580,7 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 
 .decision-box {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) 112px;
   min-height: 173px;
   gap: 5px 15px;
   margin: 20px 0 16px;
@@ -588,6 +588,10 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   border: 1px solid color-mix(in srgb, var(--accent) 23%, var(--line));
   border-radius: 8px;
   background: rgba(255, 255, 255, .018);
+}
+
+.decision-box > div:first-child {
+  min-width: 0;
 }
 
 .decision-box::after {
@@ -638,6 +642,7 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   color: var(--direction-color, var(--amber));
   font-size: 22px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .decision-box p {
@@ -648,9 +653,20 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   line-height: 1.65;
 }
 
-.confidence { text-align: right; }
+.confidence {
+  width: 112px;
+  min-width: 0;
+  text-align: right;
+}
 .confidence b { display: block; margin-top: 4px; font: 800 19px Consolas, monospace; }
-.confidence small { display: block; margin-top: 4px; color: #dce6ee; font-size: 8px; }
+.confidence small {
+  display: block;
+  margin-top: 4px;
+  color: #dce6ee;
+  font-size: 8px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
 
 .forecast-box {
   margin: -6px 0 16px;
@@ -1411,7 +1427,7 @@ footer p { max-width: 720px; margin: 0; }
   .asset-name h2 { font-size: clamp(25px, 8vw, 32px); }
   .ticker { padding: 8px 10px; font-size: 12px; }
   .decision-box {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 94px;
     gap: 8px 10px;
     padding: 15px 14px 16px;
   }
@@ -1419,7 +1435,8 @@ footer p { max-width: 720px; margin: 0; }
   .decision-box strong { font-size: 25px; }
   .decision-box p { font-size: 13px; line-height: 1.7; }
   .confidence b { font-size: 21px; }
-  .confidence small { max-width: 86px; font-size: 10px; line-height: 1.35; }
+  .confidence { width: 94px; }
+  .confidence small { max-width: 94px; font-size: 10px; line-height: 1.35; }
   .timeframe-block { padding: 13px; }
   .timeframe-heading strong { font-size: 15px; }
   .timeframe-heading span { font-size: 11px; line-height: 1.45; }
