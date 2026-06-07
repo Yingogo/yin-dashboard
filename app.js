@@ -441,12 +441,16 @@ function buildCombinedDecision(market, forecast, scores, context) {
   const forecastTone = forecast.score >= 20 ? "偏多" : forecast.score <= -20 ? "偏空" : "中性";
   const agreement = technicalTone === forecastTone && technicalTone !== "中性";
   const conflict = technicalTone !== "中性" && forecastTone !== "中性" && technicalTone !== forecastTone;
+  const statusShort = agreement ? "同向" : conflict ? "分歧" : "尚未同向";
+  const statusTone = agreement ? "aligned" : conflict ? "conflict" : "mixed";
   return {
     ...regime,
     score,
     tone,
     confidence,
     strengthLabel: directionStrength(tone, confidence),
+    statusShort,
+    statusTone,
     status: agreement ? "數據分析（預測資料）與技術分析（目前資料）同向" : conflict ? "數據分析（預測資料）與技術分析（目前資料）分歧" : "部分訊號尚未同向",
     reason: `數據分析（預測資料）${forecastTone}（${Math.round(regime.forecastWeight * 100)}%），技術分析（目前資料）${technicalTone}（${Math.round(regime.currentWeight * 100)}%）`
   };
@@ -684,6 +688,11 @@ function setHistoryDefaults() {
   document.querySelector("#history-time").value = `${hh}:${min}`;
 }
 
+function clearHistoryReview() {
+  const results = document.querySelector("#history-results");
+  results.innerHTML = `<p class="history-empty">尚未回顧。時間以台灣時間計算，只使用該時間點以前的 K 線。</p>`;
+}
+
 async function loadHistoryReview() {
   const button = document.querySelector("#history-button");
   const results = document.querySelector("#history-results");
@@ -814,7 +823,7 @@ function renderCard(item) {
     </div>
     <div class="decision-box combined-primary ${item.combined.tone}" style="--confidence:${item.combined.confidence}%">
       <div><span>綜合方向判斷｜數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%</span><strong>${item.combined.strengthLabel}</strong></div>
-      <div class="confidence"><span>綜合強度</span><b>${item.combined.confidence}%</b><small>${item.combined.status}</small></div>
+      <div class="confidence"><span>綜合強度</span><b>${item.combined.confidence}%</b><small class="direction-sync ${item.combined.statusTone}"><span>${item.combined.statusShort}</span><em>${item.combined.status}</em></small></div>
       <p>因為 ${item.combined.reason}；權重依據：${item.combined.trigger}。數據分析（預測資料）依據為 ${item.forecast.basis}。</p>
     </div>
     <div class="signal-comparison signal-comparison-primary">
@@ -1010,6 +1019,7 @@ function updateClock() {
 
 document.querySelector("#refresh-button").addEventListener("click", loadMarkets);
 document.querySelector("#history-button").addEventListener("click", loadHistoryReview);
+document.querySelector("#history-clear-button").addEventListener("click", clearHistoryReview);
 setInterval(updateClock, 1000);
 setInterval(renderEventCalendar, 60 * 1000);
 setInterval(loadMarkets, 5 * 60 * 1000);
