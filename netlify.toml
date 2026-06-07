@@ -1,4 +1,5 @@
 [build]
+  command = "node -e \"console.log('No build step required')\""
   publish = "public"
   functions = "netlify/functions"
 
