@@ -369,10 +369,10 @@ function buildForwardForecast(market, factors, context, coverage) {
       ? { label: "偏空情境較高", tone: "negative" }
       : { label: "震盪情境較高", tone: "neutral" };
   const invalidation = score < -10
-    ? "若價格重新站回 VWAP、殖利率轉跌或領導資產轉強，偏空預測需下修。"
+    ? "若價格重新站回 VWAP、殖利率轉跌或領導資產轉強，數據分析（預測資料）的偏空判斷需下修。"
     : score > 10
-      ? "若價格跌破 VWAP、殖利率急升或領導資產轉弱，偏多預測需下修。"
-      : "若多週期與跨市場因素開始同向，震盪預測將失效。";
+      ? "若價格跌破 VWAP、殖利率急升或領導資產轉弱，數據分析（預測資料）的偏多判斷需下修。"
+      : "若多週期與跨市場因素開始同向，數據分析（預測資料）的震盪判斷將失效。";
   const confidence = Math.round(clamp(Math.abs(score), 20, 85));
   const strengthLabel = directionStrength(dominant.tone, confidence);
 
@@ -447,8 +447,8 @@ function buildCombinedDecision(market, forecast, scores, context) {
     tone,
     confidence,
     strengthLabel: directionStrength(tone, confidence),
-    status: agreement ? "預測與目前資料同向" : conflict ? "預測與目前資料分歧" : "部分訊號尚未同向",
-    reason: `影響因素預測 ${forecastTone}（${Math.round(regime.forecastWeight * 100)}%），目前資料 ${technicalTone}（${Math.round(regime.currentWeight * 100)}%）`
+    status: agreement ? "數據分析（預測資料）與技術分析（目前資料）同向" : conflict ? "數據分析（預測資料）與技術分析（目前資料）分歧" : "部分訊號尚未同向",
+    reason: `數據分析（預測資料）${forecastTone}（${Math.round(regime.forecastWeight * 100)}%），技術分析（目前資料）${technicalTone}（${Math.round(regime.currentWeight * 100)}%）`
   };
 }
 
@@ -627,10 +627,10 @@ function timeframeBlock(title, badge, description, scores, predicted = false) {
       <b>${badge}</b>
     </div>
     <div class="timeframe-grid">
-      ${timeframeChip("m5", "5 分", scores.m5, predicted ? "影響因素預測" : "目前資料")}
-      ${timeframeChip("m15", "15 分", scores.m15, predicted ? "影響因素預測" : "目前資料")}
-      ${timeframeChip("h1", "1 小時", scores.h1, predicted ? "影響因素預測" : "目前資料")}
-      ${timeframeChip("d1", "日線", scores.d1, predicted ? "影響因素預測" : "目前資料")}
+      ${timeframeChip("m5", "5 分", scores.m5, predicted ? "數據分析（預測資料）" : "技術分析（目前資料）")}
+      ${timeframeChip("m15", "15 分", scores.m15, predicted ? "數據分析（預測資料）" : "技術分析（目前資料）")}
+      ${timeframeChip("h1", "1 小時", scores.h1, predicted ? "數據分析（預測資料）" : "技術分析（目前資料）")}
+      ${timeframeChip("d1", "日線", scores.d1, predicted ? "數據分析（預測資料）" : "技術分析（目前資料）")}
     </div>
   </section>`;
 }
@@ -709,7 +709,7 @@ function renderFactorDetails(item) {
       <div class="factor-columns"><span>因素 / 來源</span><span>目前狀態</span><span>方向影響</span><span>權重</span></div>
       <div class="factor-rows">${rows}</div>
       <div class="factor-summary">
-        <span>預測因素加權分數</span>
+        <span>數據分析（預測資料）加權分數</span>
         <strong class="${impactLabel(item.factorScore).tone}">${item.factorScore >= 0 ? "+" : ""}${Math.round(item.factorScore)} · ${impactLabel(item.factorScore).text}</strong>
       </div>
     </div>
@@ -725,9 +725,9 @@ function renderCard(item) {
       <div class="ticker">${item.ticker}</div>
     </div>
     <div class="decision-box combined-primary ${item.combined.tone}" style="--confidence:${item.combined.confidence}%">
-      <div><span>綜合方向判斷｜預測 ${Math.round(item.combined.forecastWeight * 100)}%＋目前資料 ${Math.round(item.combined.currentWeight * 100)}%</span><strong>${item.combined.strengthLabel}</strong></div>
+      <div><span>綜合方向判斷｜數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%</span><strong>${item.combined.strengthLabel}</strong></div>
       <div class="confidence"><span>綜合強度</span><b>${item.combined.confidence}%</b><small>${item.combined.status}</small></div>
-      <p>因為 ${item.combined.reason}；權重依據：${item.combined.trigger}。預測依據為 ${item.forecast.basis}。</p>
+      <p>因為 ${item.combined.reason}；權重依據：${item.combined.trigger}。數據分析（預測資料）依據為 ${item.forecast.basis}。</p>
     </div>
     <div class="signal-comparison signal-comparison-primary">
       ${timeframeBlock("技術分析（目前資料）", "CURRENT", "目前 K 棒、EMA、RSI、動能｜僅供確認", item.scores)}
@@ -735,19 +735,19 @@ function renderCard(item) {
     </div>
     <div class="forecast-box">
       <div class="forecast-head">
-        <div><span>預測情境分布｜影響因素預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
+        <div><span>預測情境分布｜總體經濟預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
         <small>模型情境權重，非勝率<br><a href="https://rili.jin10.com/" target="_blank" rel="noopener noreferrer">金十日曆 ↗</a> · <a href="https://tradingeconomics.com/calendar" target="_blank" rel="noopener noreferrer">TE 日曆 ↗</a></small>
       </div>
       <div class="scenario-bars">
-        <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>影響因素預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
-        <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>影響因素預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
-        <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>影響因素預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
+        <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>總體經濟預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
+        <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>總體經濟預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
+        <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>總體經濟預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
       </div>
       <p><b>因為：</b>${item.forecast.basis}。${item.forecast.event}</p>
       <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
     </div>
     <div class="logic-summary ${item.combined.tone}">
-      <span>綜合摘要｜預測為主、目前資料為輔</span>
+      <span>綜合摘要｜數據分析（預測資料）為主、技術分析（目前資料）為輔</span>
       <p>因為 ${item.combined.reason}，所以綜合結果為「${item.combined.strengthLabel}」；${item.combined.status}。${item.forecast.event} ${item.forecast.invalidation}</p>
     </div>
     <div class="price-line">

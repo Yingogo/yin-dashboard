@@ -186,12 +186,12 @@ body {
 .fg-heading a strong { display: block; }
 .fg-heading a span {
   color: #4d708c;
-  font: 700 7px Consolas, monospace;
+  font: 700 9px Consolas, monospace;
   letter-spacing: .13em;
 }
 .fg-heading a strong {
   margin-top: 3px;
-  font-size: 14px;
+  font-size: 17px;
   letter-spacing: -.02em;
 }
 .fg-current { display: flex; align-items: center; gap: 7px; }
@@ -206,7 +206,7 @@ body {
   border-radius: 4px;
   color: var(--fg-color);
   background: color-mix(in srgb, var(--fg-color) 11%, transparent);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -226,16 +226,16 @@ body {
   filter: drop-shadow(0 0 5px rgba(255,255,255,.35));
 }
 .fg-hub { fill: #f7fbff; stroke: #0a1119; stroke-width: 4; }
-.fg-scale { fill: #6c8296; font: 8px Consolas, monospace; }
-.fg-score { fill: #f7fbff; font: 800 18px Consolas, monospace; }
+.fg-scale { fill: #d3dee7; font: 700 11px Consolas, monospace; }
+.fg-score { fill: #f7fbff; font: 800 20px Consolas, monospace; }
 .fg-zone-labels {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 2px;
   margin: -10px 3px 0;
-  color: #49647a;
+  color: #b5c7d5;
   text-align: center;
-  font-size: 6px;
+  font-size: 8px;
   font-weight: 700;
 }
 
@@ -254,14 +254,15 @@ body {
   border-bottom: 1px dashed rgba(107, 139, 166, .17);
 }
 .fg-history span {
-  color: #668097;
-  font-size: 7px;
+  color: #d3dee7;
+  font-size: 10px;
+  font-weight: 700;
 }
 .fg-history small {
   display: block;
-  margin-top: 1px;
-  color: #9aabb9;
-  font-size: 7px;
+  margin-top: 2px;
+  color: #b8c8d6;
+  font-size: 9px;
 }
 .fg-history b {
   display: grid;
@@ -272,13 +273,13 @@ body {
   border-radius: 50%;
   color: var(--history-color);
   background: color-mix(in srgb, var(--history-color) 10%, transparent);
-  font: 800 8px Consolas, monospace;
+  font: 800 10px Consolas, monospace;
 }
 .fg-updated {
   margin-top: 2px;
-  color: #3f596e;
+  color: #9fb2c2;
   text-align: right;
-  font: 7px Consolas, monospace;
+  font: 9px Consolas, monospace;
 }
 .fg-unavailable {
   display: grid;
@@ -464,7 +465,7 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 .later-event-grid { padding: 8px; }
 .event-row {
   display: grid;
-  grid-template-columns: 78px 1fr;
+  grid-template-columns: minmax(86px, .72fr) minmax(0, 1.65fr);
   gap: 9px;
   min-width: 0;
   padding: 10px;
@@ -479,7 +480,18 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 .event-reminder b, .event-reminder span { display: block; }
 .event-time strong { color: var(--cyan); font: 800 10px Consolas, monospace; }
 .event-time span, .event-name span, .event-reminder span { margin-top: 4px; color: #b8c8d6; font-size: 8px; }
-.event-name strong { overflow: hidden; color: #f4f8fc; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.event-name { min-width: 0; }
+.event-name strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #f4f8fc;
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .event-reminder { grid-column: 1 / -1; display: flex; justify-content: space-between; padding-top: 7px; border-top: 1px dashed rgba(150, 177, 200, .18); }
 .event-reminder b { color: var(--blue); font-size: 8px; }
 .event-row.soon { border-color: rgba(255, 189, 46, .35); background: rgba(255, 189, 46, .055); }
