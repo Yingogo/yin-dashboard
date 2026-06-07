@@ -1244,6 +1244,85 @@ footer p { max-width: 720px; margin: 0; }
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+@media (min-width: 1121px) {
+  .summary-strip span { font-size: 11px; }
+  .summary-strip strong { font-size: 19px; }
+  .decision-banner { font-size: 13px; line-height: 1.55; }
+  .event-panel-head h2 { font-size: 20px; }
+  .event-links { font-size: 11px; }
+  .later-events summary { font-size: 11px; }
+  .event-time strong,
+  .event-name strong { font-size: 12px; }
+  .event-time span,
+  .event-name span,
+  .event-reminder span,
+  .event-reminder b { font-size: 10px; line-height: 1.4; }
+  .event-empty,
+  .event-note { font-size: 11px; }
+
+  .decision-box span { font-size: 11px; }
+  .decision-box strong { font-size: 25px; }
+  .decision-box p { font-size: 13px; }
+  .confidence b { font-size: 21px; }
+  .confidence small { font-size: 10px; }
+
+  .timeframe-heading strong { font-size: 13px; }
+  .timeframe-heading span { font-size: 10px; }
+  .timeframe-heading b { font-size: 10px; }
+  .tf-chip { min-height: 100px; padding-block: 12px; }
+  .tf-chip span { font-size: 11px; }
+  .tf-chip em { font-size: 8px; }
+  .tf-chip strong { font-size: 16px; }
+  .tf-chip small { font-size: 11px; }
+
+  .forecast-head span { font-size: 10px; }
+  .forecast-head strong { font-size: 16px; }
+  .forecast-head small { font-size: 9px; line-height: 1.45; }
+  .scenario-bars span,
+  .scenario-bars b { font-size: 10px; }
+  .scenario-bars span em { font-size: 8px; }
+  .forecast-box p,
+  .logic-summary p { font-size: 12px; }
+  .logic-summary span { font-size: 10px; }
+
+  .level span { font-size: 10px; }
+  .level b,
+  .intraday-levels .level:nth-child(2) b { font-size: 12px; }
+  .card-foot { font-size: 10px; }
+
+  .embedded-factors summary b,
+  .model-details summary b,
+  .strength-details summary b { font-size: 12px; }
+  .embedded-factors summary small,
+  .model-details summary small,
+  .strength-details summary small { font-size: 10px; line-height: 1.45; }
+  .embedded-factors summary > strong,
+  .model-details summary > strong,
+  .strength-details summary > strong { font-size: 10px; }
+
+  .risk-alert { font-size: 11px; }
+  .factor-panel-head span,
+  .coverage small { font-size: 10px; }
+  .factor-panel-head h2 { font-size: 18px; }
+  .coverage strong { font-size: 15px; }
+  .factor-columns { font-size: 9px; }
+  .factor-identity strong { font-size: 12px; }
+  .factor-identity small,
+  .factor-value small { font-size: 10px; line-height: 1.35; }
+  .factor-value b { font-size: 12px; }
+  .factor-impact em { font-size: 8px; }
+  .impact-pill { font-size: 10px; }
+  .factor-weight { font-size: 11px; }
+  .factor-summary { font-size: 10px; }
+  .factor-summary strong { font-size: 12px; }
+
+  .factor-grid b { font-size: 13px; }
+  .factor-grid span { font-size: 11px; }
+  .checklist li { font-size: 12px; }
+  .checklist li span { font-size: 11px; }
+  footer { font-size: 10px; }
+}
+
 @media (max-width: 1120px) {
   .topbar { align-items: flex-start; flex-wrap: wrap; }
   .top-actions { width: 100%; flex-basis: 100%; }
