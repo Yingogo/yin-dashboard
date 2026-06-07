@@ -2,7 +2,7 @@ const { requestHandler } = require("../../server");
 
 exports.handler = async function handler(event) {
   const params = new URLSearchParams(event.queryStringParameters || {});
-  const route = params.get("route") || "context";
+  const route = params.get("route") || (params.has("symbol") ? "market" : "context");
   params.delete("route");
   const query = params.toString();
 
