@@ -207,14 +207,14 @@ function marketBias(item) {
   const rawScore = structureScore * weights.technical + fundamentalScore * weights.fundamental;
   const score = Math.round(clamp(rawScore / 10, -10, 10));
   const conclusion = score >= 5
-    ? { label: "Bullish", chinese: "偏多", tone: "positive" }
+    ? { label: "今天偏多", english: "Bullish", tone: "positive" }
     : score >= 2
-      ? { label: "Slightly Bullish", chinese: "稍微偏多", tone: "positive" }
+      ? { label: "今天稍微偏多", english: "Slightly Bullish", tone: "positive" }
       : score <= -5
-        ? { label: "Bearish", chinese: "偏空", tone: "negative" }
+        ? { label: "今天偏空", english: "Bearish", tone: "negative" }
         : score <= -2
-          ? { label: "Slightly Bearish", chinese: "稍微偏空", tone: "negative" }
-          : { label: "No Trade", chinese: "方向不明", tone: "neutral" };
+          ? { label: "今天稍微偏空", english: "Slightly Bearish", tone: "negative" }
+          : { label: "今天不交易", english: "No Trade", tone: "neutral" };
   const structureReasons = structureScores
     .filter((entry) => entry.value !== 0)
     .map((entry) => ({
@@ -877,12 +877,45 @@ function renderMarketBias(item) {
     : `<li><span>可用評分不足</span><b>0</b></li>`;
   return `<section class="market-bias ${bias.tone}">
     <div class="bias-head">
-      <div><span>${item.ticker} MARKET BIAS</span><strong>${bias.label}</strong><small>${bias.chinese}</small></div>
+      <div><span>${item.ticker} 今日方向判斷</span><strong>${bias.label}</strong><small>${bias.english}</small></div>
       <div class="bias-score"><span>總分</span><b>${bias.score > 0 ? "+" : ""}${bias.score}</b></div>
     </div>
     <ul>${rows}</ul>
-    <p>權重：數據分析 ${(bias.weights.fundamental * 100).toFixed(0)}% / 市場結構 ${(bias.weights.technical * 100).toFixed(0)}%。分數標準：+5 以上 Bullish，-5 以下 Bearish，-1 到 +1 No Trade。</p>
+    <p>這是主要判斷。權重：數據分析 ${(bias.weights.fundamental * 100).toFixed(0)}% / 市場結構 ${(bias.weights.technical * 100).toFixed(0)}%。+5 以上偏多，-5 以下偏空，-1 到 +1 不交易。</p>
   </section>`;
+}
+
+function renderDecisionSupport(item) {
+  return `<details class="decision-support">
+    <summary>
+      <div><b>輔助判斷與細節</b><small>展開查看數據分析、技術分析週期與完整影響因素</small></div>
+      <strong class="${item.combined.statusTone}">${item.combined.statusShort}</strong>
+    </summary>
+    <div class="support-body">
+      <div class="support-summary ${item.combined.tone}">
+        <span>數據分析與技術分析是否同向</span>
+        <b>${item.combined.status}</b>
+        <p>數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%；綜合強度 ${item.combined.confidence}%。</p>
+      </div>
+      <div class="signal-comparison signal-comparison-primary">
+        ${timeframeBlock("技術分析（目前資料）", "CURRENT", "HH/HL、LH/LL、VWAP、動能", item.scores)}
+        ${timeframeBlock("數據分析（預測資料）", "FORECAST", "重大事件、殖利率、美元、VIX、領導資產", item.predictiveScores, true)}
+      </div>
+      <div class="forecast-box">
+        <div class="forecast-head">
+          <div><span>總體經濟預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
+          <small>模型情境權重，非勝率</small>
+        </div>
+        <div class="scenario-bars">
+          <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>總體經濟預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
+          <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>總體經濟預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
+          <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>總體經濟預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
+        </div>
+        <p><b>因為：</b>${item.forecast.basis}。${item.forecast.event}</p>
+        <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
+      </div>
+    </div>
+  </details>`;
 }
 
 function timeframeBlock(title, badge, description, scores, predicted = false) {
@@ -1086,32 +1119,7 @@ function renderCard(item) {
       <div class="ticker">${item.ticker}</div>
     </div>
     ${renderMarketBias(item)}
-    <div class="decision-box combined-primary ${item.combined.tone}" style="--confidence:${item.combined.confidence}%">
-      <div><span>綜合方向判斷｜數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%</span><strong>${item.combined.strengthLabel}</strong></div>
-      <div class="confidence"><span>綜合強度</span><b>${item.combined.confidence}%</b><small class="direction-sync ${item.combined.statusTone}"><span>${item.combined.statusShort}</span><em>${item.combined.status}</em></small></div>
-      <p>因為 ${item.combined.reason}；權重依據：${item.combined.trigger}。數據分析（預測資料）依據為 ${item.forecast.basis}。</p>
-    </div>
-    <div class="signal-comparison signal-comparison-primary">
-      ${timeframeBlock("技術分析（目前資料）", "CURRENT", "目前 K 棒、EMA、RSI、動能｜僅供確認", item.scores)}
-      ${timeframeBlock("數據分析（預測資料）", "FORECAST", "殖利率、美元、VIX、領導資產及基本面投射", item.predictiveScores, true)}
-    </div>
-    <div class="forecast-box">
-      <div class="forecast-head">
-        <div><span>預測情境分布｜總體經濟預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
-        <small>模型情境權重，非勝率<br><a href="https://rili.jin10.com/" target="_blank" rel="noopener noreferrer">金十日曆 ↗</a> · <a href="https://tradingeconomics.com/calendar" target="_blank" rel="noopener noreferrer">TE 日曆 ↗</a></small>
-      </div>
-      <div class="scenario-bars">
-        <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>總體經濟預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
-        <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>總體經濟預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
-        <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>總體經濟預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
-      </div>
-      <p><b>因為：</b>${item.forecast.basis}。${item.forecast.event}</p>
-      <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
-    </div>
-    <div class="logic-summary ${item.combined.tone}">
-      <span>綜合摘要｜數據分析（預測資料）為主、技術分析（目前資料）為輔</span>
-      <p>因為 ${item.combined.reason}，所以綜合結果為「${item.combined.strengthLabel}」；${item.combined.status}。${item.forecast.event} ${item.forecast.invalidation}</p>
-    </div>
+    ${renderDecisionSupport(item)}
     <div class="price-line">
       <strong class="last-price">${formatPrice(item.last, item.decimals)}</strong>
       <span class="daily-change ${changeTone}">${item.changePercent >= 0 ? "▲" : "▼"} ${Math.abs(item.changePercent).toFixed(2)}%</span>
