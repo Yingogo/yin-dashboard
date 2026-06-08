@@ -496,13 +496,13 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 .high-impact-banner span,
 .high-impact-banner b {
   color: var(--red);
-  font: 900 11px Consolas, monospace;
+  font: 900 12px Consolas, monospace;
   letter-spacing: .08em;
 }
 .high-impact-banner strong {
   grid-column: 1;
   color: #f4f8fc;
-  font-size: 16px;
+  font-size: 18px;
 }
 .high-impact-banner b {
   grid-row: 1 / span 2;
@@ -510,8 +510,8 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 }
 .event-time strong, .event-time span, .event-name strong, .event-name span,
 .event-values span, .event-values b, .event-reminder b, .event-reminder span { display: block; }
-.event-time strong { color: var(--cyan); font: 800 10px Consolas, monospace; }
-.event-time span, .event-name span, .event-values span, .event-reminder span { margin-top: 4px; color: #b8c8d6; font-size: 8px; }
+.event-time strong { color: var(--cyan); font: 800 13px Consolas, monospace; }
+.event-time span, .event-name span, .event-values span, .event-reminder span { margin-top: 4px; color: #d5e0e9; font-size: 11px; line-height: 1.45; }
 .event-name { min-width: 0; }
 .event-name a { color: inherit; text-decoration: none; }
 .event-name a:hover { color: var(--cyan); }
@@ -519,7 +519,7 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   display: -webkit-box;
   overflow: hidden;
   color: #f4f8fc;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.35;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -541,7 +541,7 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 .event-values b {
   margin-top: 4px;
   color: #f4f8fc;
-  font: 800 10px Consolas, monospace;
+  font: 800 12px Consolas, monospace;
 }
 .event-stars { color: var(--amber) !important; letter-spacing: .05em; }
 .event-impact {
@@ -561,19 +561,19 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
 }
 .event-impact-line strong {
   color: #f4f8fc;
-  font-size: 9px;
+  font-size: 12px;
 }
 .event-impact-line span {
-  font: 800 9px Consolas, monospace;
+  font: 800 12px Consolas, monospace;
 }
 .event-reminder { grid-column: 1 / -1; display: flex; justify-content: space-between; padding-top: 7px; border-top: 1px dashed rgba(150, 177, 200, .18); }
-.event-reminder b { color: var(--blue); font-size: 8px; }
+.event-reminder b { color: var(--blue); font-size: 11px; }
 .event-row.soon { border-color: rgba(255, 189, 46, .35); background: rgba(255, 189, 46, .055); }
 .event-row.soon .event-reminder b, .event-row.warning .event-reminder b { color: var(--amber); }
 .event-row.warning { border-color: rgba(255, 189, 46, .7); box-shadow: 0 0 16px rgba(255, 189, 46, .08); }
 .event-row.danger { border-color: rgba(255, 63, 98, .75); background: rgba(255, 63, 98, .08); box-shadow: 0 0 18px rgba(255, 63, 98, .12); }
 .event-row.danger .event-reminder b { color: var(--red); }
-.event-empty, .event-note { color: #b8c8d6; font-size: 9px; }
+.event-empty, .event-note { color: #d5e0e9; font-size: 11px; }
 .event-empty { grid-column: 1 / -1; padding: 12px; border: 1px dashed var(--line); text-align: center; }
 .event-note { margin: 10px 0 0; line-height: 1.5; }
 
@@ -947,12 +947,25 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   color: currentColor;
   font: 900 28px/1 Consolas, monospace;
 }
+.bias-score small {
+  display: block;
+  margin-top: 7px;
+  color: #f4f8fc;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.bias-section-title {
+  margin: 14px 0 7px;
+  color: #f4f8fc;
+  font: 900 12px Consolas, monospace;
+  letter-spacing: .08em;
+}
 .market-bias ul {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(46px, auto);
-  gap: 7px 12px;
-  margin: 14px 0 10px;
+  gap: 8px 12px;
+  margin: 0 0 10px;
   padding: 0;
   list-style: none;
 }
@@ -965,10 +978,37 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   border-radius: 7px;
   background: rgba(5, 10, 15, .45);
 }
+.market-bias li.positive {
+  border-color: rgba(25, 242, 162, .48);
+  background: linear-gradient(135deg, rgba(25, 242, 162, .18), rgba(5, 10, 15, .62));
+  box-shadow: inset 0 -2px 0 rgba(25, 242, 162, .45);
+}
+.market-bias li.negative {
+  border-color: rgba(255, 63, 98, .55);
+  background: linear-gradient(135deg, rgba(255, 63, 98, .19), rgba(5, 10, 15, .62));
+  box-shadow: inset 0 -2px 0 rgba(255, 63, 98, .45);
+}
+.market-bias li.neutral {
+  border-color: rgba(255, 189, 46, .44);
+  background: linear-gradient(135deg, rgba(255, 189, 46, .16), rgba(5, 10, 15, .62));
+  box-shadow: inset 0 -2px 0 rgba(255, 189, 46, .35);
+}
 .market-bias li span {
   color: #f4f8fc;
   font-size: 11px;
   line-height: 1.35;
+}
+.market-bias li strong {
+  display: block;
+  color: #f4f8fc;
+  font-size: 12px;
+}
+.market-bias li small {
+  display: block;
+  margin-top: 3px;
+  color: #d5e0e9;
+  font-size: 10px;
+  line-height: 1.25;
 }
 .market-bias li b {
   color: currentColor;
@@ -986,6 +1026,17 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   border: 1px solid rgba(44, 140, 255, .28);
   border-radius: 9px;
   background: rgba(7, 13, 20, .82);
+}
+.decision-primary {
+  margin: 18px 0 16px;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(44, 140, 255, .065), rgba(7, 13, 20, .88));
+}
+.decision-primary .support-body {
+  padding: 0;
+}
+.decision-primary .support-summary {
+  margin-bottom: 14px;
 }
 .decision-support > summary {
   position: relative;
@@ -1668,11 +1719,15 @@ footer p { max-width: 720px; margin: 0; }
   .event-links { font-size: 11px; }
   .later-events summary { font-size: 11px; }
   .event-time strong,
-  .event-name strong { font-size: 12px; }
+  .event-name strong { font-size: 14px; }
   .event-time span,
   .event-name span,
+  .event-values span,
   .event-reminder span,
-  .event-reminder b { font-size: 10px; line-height: 1.4; }
+  .event-reminder b { font-size: 11px; line-height: 1.45; }
+  .event-values b,
+  .event-impact-line strong,
+  .event-impact-line span { font-size: 12px; }
   .event-empty,
   .event-note { font-size: 11px; }
 
@@ -1684,7 +1739,11 @@ footer p { max-width: 720px; margin: 0; }
   .bias-head strong,
   .bias-score b { font-size: 29px; }
   .bias-head small { font-size: 13px; }
+  .bias-score small { font-size: 11px; }
+  .bias-section-title { font-size: 13px; }
   .market-bias li span { font-size: 12px; }
+  .market-bias li strong { font-size: 13px; }
+  .market-bias li small { font-size: 11px; }
   .market-bias li b { font-size: 14px; }
   .market-bias p { font-size: 12px; }
   .decision-support summary b { font-size: 14px; }
@@ -1810,15 +1869,15 @@ footer p { max-width: 720px; margin: 0; }
   .event-name span,
   .event-values span,
   .event-reminder span,
-  .event-reminder b { font-size: 10px; line-height: 1.45; }
+  .event-reminder b { font-size: 11px; line-height: 1.5; }
   .high-impact-banner { grid-template-columns: 1fr; }
   .high-impact-banner strong,
   .high-impact-banner b { grid-column: 1; grid-row: auto; }
   .event-values { grid-template-columns: 1fr 1fr; }
-  .event-values b { font-size: 11px; }
+  .event-values b { font-size: 12px; }
   .event-impact-line { grid-template-columns: 1fr; }
   .event-impact-line strong,
-  .event-impact-line span { font-size: 11px; }
+  .event-impact-line span { font-size: 12px; }
   .event-note,
   .event-empty { font-size: 11px; line-height: 1.6; }
   .history-panel { padding: 14px; }

@@ -9,12 +9,10 @@ exports.handler = async function handler(event) {
   return new Promise((resolve) => {
     let statusCode = 200;
     let headers = {};
-
     const req = {
       url: `/api/${route}${query ? `?${query}` : ""}`,
       headers: { host: event.headers?.host || "localhost" }
     };
-
     const res = {
       writeHead(status, responseHeaders) {
         statusCode = status;
@@ -29,7 +27,6 @@ exports.handler = async function handler(event) {
         });
       }
     };
-
     requestHandler(req, res);
   });
 };

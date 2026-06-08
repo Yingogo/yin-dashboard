@@ -194,45 +194,59 @@ function marketBias(item) {
     MGC: { fundamental: 0.4, technical: 0.6 },
     MCL: { fundamental: 0.5, technical: 0.5 }
   }[item.ticker];
+  const neutralStructure = { score: 0, label: "震盪", tone: "neutral" };
   const structureScores = [
-    { name: "Daily Structure", value: item.scores.d1.structure?.score ?? 0, weight: 0.25 },
-    { name: "4H Structure", value: item.scores.h4.structure?.score ?? 0, weight: 0.25 },
-    { name: "1H Structure", value: item.scores.h1.structure?.score ?? 0, weight: 0.25 },
-    { name: "15m Structure", value: item.scores.m15.structure?.score ?? 0, weight: 0.15 },
-    { name: "5m Structure", value: item.scores.m5.structure?.score ?? 0, weight: 0.1 }
-  ];
+    { name: "Daily", structure: item.scores.d1.structure || neutralStructure, weight: 0.25 },
+    { name: "4H", structure: item.scores.h4.structure || neutralStructure, weight: 0.25 },
+    { name: "1H", structure: item.scores.h1.structure || neutralStructure, weight: 0.25 },
+    { name: "15M", structure: item.scores.m15.structure || neutralStructure, weight: 0.15 },
+    { name: "5M", structure: item.scores.m5.structure || neutralStructure, weight: 0.1 }
+  ].map((entry) => ({
+    ...entry,
+    value: entry.structure.score ?? 0
+  }));
   const structureScore = structureScores.reduce((sum, entry) => sum + entry.value * entry.weight, 0);
   const connectedFundamentals = predictiveFactors(item.factors);
   const fundamentalScore = connectedFundamentals.length ? combinedScore(connectedFundamentals) : 0;
   const rawScore = structureScore * weights.technical + fundamentalScore * weights.fundamental;
   const score = Math.round(clamp(rawScore / 10, -10, 10));
   const conclusion = score >= 5
-    ? { label: "今天偏多", english: "Bullish", tone: "positive" }
+    ? { label: "偏多", english: "Bullish", tone: "positive" }
     : score >= 2
-      ? { label: "今天稍微偏多", english: "Slightly Bullish", tone: "positive" }
+      ? { label: "稍微偏多", english: "Slightly Bullish", tone: "positive" }
       : score <= -5
-        ? { label: "今天偏空", english: "Bearish", tone: "negative" }
+        ? { label: "偏空", english: "Bearish", tone: "negative" }
         : score <= -2
-          ? { label: "今天稍微偏空", english: "Slightly Bearish", tone: "negative" }
-          : { label: "今天不交易", english: "No Trade", tone: "neutral" };
-  const structureReasons = structureScores
-    .filter((entry) => entry.value !== 0)
-    .map((entry) => ({
+          ? { label: "稍微偏空", english: "Slightly Bearish", tone: "negative" }
+          : { label: "不交易", english: "No Trade", tone: "neutral" };
+  const structureReasons = structureScores.map((entry) => {
+    const points = Math.round(entry.value * entry.weight * weights.technical / 10);
+    return {
       name: entry.name,
-      points: Math.round(entry.value * entry.weight * weights.technical / 10)
-    }));
+      detail: entry.structure.label || "震盪",
+      tone: entry.structure.tone || (points > 0 ? "positive" : points < 0 ? "negative" : "neutral"),
+      points
+    };
+  });
   const fundamentalReasons = connectedFundamentals
     .map((factor) => ({
       name: factor.name,
       points: Math.round(factor.score * factor.weight / 100 * weights.fundamental / 10)
     }))
     .filter((entry) => entry.points !== 0)
-    .sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+    .sort((a, b) => Math.abs(b.points) - Math.abs(a.points))
+    .slice(0, 3)
+    .map((entry) => ({
+      ...entry,
+      detail: entry.points > 0 ? "偏多因子" : "偏空因子",
+      tone: entry.points > 0 ? "positive" : "negative"
+    }));
 
   return {
     score,
     ...conclusion,
-    reasons: [...structureReasons, ...fundamentalReasons].slice(0, 6),
+    structureReasons,
+    fundamentalReasons,
     weights
   };
 }
@@ -870,14 +884,14 @@ function timeframeChip(key, title, data, method) {
   </div>`;
 }
 
-function renderMarketBias(item) {
+function renderMarketBiasLegacy(item) {
   const bias = marketBias(item);
   const rows = bias.reasons.length
     ? bias.reasons.map((reason) => `<li><span>${reason.name}</span><b>${reason.points > 0 ? "+" : ""}${reason.points}</b></li>`).join("")
     : `<li><span>可用評分不足</span><b>0</b></li>`;
   return `<section class="market-bias ${bias.tone}">
     <div class="bias-head">
-      <div><span>${item.ticker} 今日方向判斷</span><strong>${bias.label}</strong><small>${bias.english}</small></div>
+      <div><span>${item.ticker} 方向判斷</span><strong>${bias.label}</strong><small>${bias.english}</small></div>
       <div class="bias-score"><span>總分</span><b>${bias.score > 0 ? "+" : ""}${bias.score}</b></div>
     </div>
     <ul>${rows}</ul>
@@ -885,15 +899,32 @@ function renderMarketBias(item) {
   </section>`;
 }
 
+function renderMarketBias(item) {
+  const bias = marketBias(item);
+  const renderReason = (reason) => `<li class="${reason.tone || "neutral"}"><span><strong>${reason.name}</strong><small>${reason.detail}</small></span><b>${reason.points > 0 ? "+" : ""}${reason.points}</b></li>`;
+  const structureRows = bias.structureReasons.map(renderReason).join("");
+  const factorRows = bias.fundamentalReasons.length
+    ? bias.fundamentalReasons.map(renderReason).join("")
+    : `<li class="neutral"><span><strong>數據因子</strong><small>目前沒有明確加減分</small></span><b>0</b></li>`;
+
+  return `<section class="market-bias ${bias.tone}">
+    <div class="bias-head">
+      <div><span>${item.ticker} 主要方向</span><strong>${bias.label}</strong><small>市場結構 + 數據分析</small></div>
+      <div class="bias-score"><span>總分</span><b>${bias.score > 0 ? "+" : ""}${bias.score}</b><small>${bias.label}</small></div>
+    </div>
+    <div class="bias-section-title">市場結構</div>
+    <ul class="bias-structure-list">${structureRows}</ul>
+    <div class="bias-section-title">數據分析原因</div>
+    <ul class="bias-factor-list">${factorRows}</ul>
+    <p>權重：數據分析 ${(bias.weights.fundamental * 100).toFixed(0)}% / 市場結構 ${(bias.weights.technical * 100).toFixed(0)}%。+5 以上偏多，+2 到 +4 稍微偏多，-1 到 +1 不交易，-2 到 -4 稍微偏空，-5 以下偏空。</p>
+  </section>`;
+}
+
 function renderDecisionSupport(item) {
-  return `<details class="decision-support">
-    <summary>
-      <div><b>輔助判斷與細節</b><small>展開查看數據分析、技術分析週期與完整影響因素</small></div>
-      <strong class="${item.combined.statusTone}">${item.combined.statusShort}</strong>
-    </summary>
+  return `<section class="decision-support decision-primary">
     <div class="support-body">
       <div class="support-summary ${item.combined.tone}">
-        <span>數據分析與技術分析是否同向</span>
+        <span>綜合結果｜數據分析與技術分析是否同向</span>
         <b>${item.combined.status}</b>
         <p>數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%；綜合強度 ${item.combined.confidence}%。</p>
       </div>
@@ -915,7 +946,7 @@ function renderDecisionSupport(item) {
         <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
       </div>
     </div>
-  </details>`;
+  </section>`;
 }
 
 function timeframeBlock(title, badge, description, scores, predicted = false) {
@@ -1118,7 +1149,6 @@ function renderCard(item) {
       <div class="asset-name"><span>${item.english}</span><h2>${item.name}</h2></div>
       <div class="ticker">${item.ticker}</div>
     </div>
-    ${renderMarketBias(item)}
     ${renderDecisionSupport(item)}
     <div class="price-line">
       <strong class="last-price">${formatPrice(item.last, item.decimals)}</strong>
