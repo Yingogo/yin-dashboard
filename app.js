@@ -41,6 +41,72 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function marketStructure(bars, lookback = 80) {
+  const sample = bars.slice(-lookback);
+  const swingHighs = [];
+  const swingLows = [];
+
+  for (let index = 2; index < sample.length - 2; index += 1) {
+    const bar = sample[index];
+    const isSwingHigh = bar.high > sample[index - 1].high &&
+      bar.high >= sample[index - 2].high &&
+      bar.high > sample[index + 1].high &&
+      bar.high >= sample[index + 2].high;
+    const isSwingLow = bar.low < sample[index - 1].low &&
+      bar.low <= sample[index - 2].low &&
+      bar.low < sample[index + 1].low &&
+      bar.low <= sample[index + 2].low;
+
+    if (isSwingHigh) swingHighs.push(bar.high);
+    if (isSwingLow) swingLows.push(bar.low);
+  }
+
+  if (swingHighs.length < 2 || swingLows.length < 2) {
+    return { label: "結構不足", tone: "neutral", score: 0 };
+  }
+
+  const highPattern = swingHighs.at(-1) > swingHighs.at(-2) ? "HH" : "LH";
+  const lowPattern = swingLows.at(-1) > swingLows.at(-2) ? "HL" : "LL";
+
+  if (highPattern === "HH" && lowPattern === "HL") {
+    return { label: "HH / HL 多方結構", tone: "positive", score: 100 };
+  }
+  if (highPattern === "LH" && lowPattern === "LL") {
+    return { label: "LH / LL 空方結構", tone: "negative", score: -100 };
+  }
+  if (highPattern === "HH" && lowPattern === "LL") {
+    return { label: "HH / LL 擴張震盪", tone: "neutral", score: 0 };
+  }
+  return { label: "LH / HL 收斂震盪", tone: "neutral", score: 0 };
+}
+
+function aggregateBars(bars, hours = 4) {
+  const bucketSize = hours * 60 * 60 * 1000;
+  const buckets = new Map();
+
+  bars.forEach((bar) => {
+    const key = Math.floor(bar.time / bucketSize) * bucketSize;
+    const current = buckets.get(key);
+    if (!current) {
+      buckets.set(key, { ...bar, time: key });
+      return;
+    }
+    current.high = Math.max(current.high, bar.high);
+    current.low = Math.min(current.low, bar.low);
+    current.close = bar.close;
+    current.volume += bar.volume || 0;
+  });
+
+  return [...buckets.values()].sort((a, b) => a.time - b.time);
+}
+
+function momentumScore(momentum) {
+  if (Math.abs(momentum) < 0.02) return 0;
+  return momentum > 0
+    ? clamp(momentum * 35, 20, 100)
+    : clamp(momentum * 35, -100, -20);
+}
+
 function scoreTimeframe(bars) {
   const closes = bars.map((bar) => bar.close);
   const last = closes.at(-1);
@@ -49,13 +115,18 @@ function scoreTimeframe(bars) {
   const ema50 = ema(closes, 50).at(-1);
   const rsi14 = rsi(closes);
   const momentum = closes.length > 6 ? ((last / closes.at(-6)) - 1) * 100 : 0;
-  let score = 0;
-  score += last > ema9 ? 20 : -20;
-  score += ema9 > ema21 ? 25 : -25;
-  score += ema21 > ema50 ? 20 : -20;
-  score += rsi14 >= 55 ? 15 : rsi14 <= 45 ? -15 : 0;
-  score += momentum > 0 ? clamp(momentum * 12, 5, 20) : clamp(momentum * 12, -20, -5);
-  return { score: Math.round(clamp(score, -100, 100)), rsi: rsi14, ema9, ema21, ema50, momentum };
+  const structure = marketStructure(bars);
+  const score = structure.score * 0.85 + momentumScore(momentum) * 0.15;
+  return {
+    score: Math.round(clamp(score, -100, 100)),
+    rsi: rsi14,
+    ema9,
+    ema21,
+    ema50,
+    momentum,
+    momentumScore: momentumScore(momentum),
+    structure
+  };
 }
 
 function newYorkKey(timestamp) {
@@ -100,12 +171,74 @@ function impactLabel(score) {
   return { text: "中性", tone: "neutral" };
 }
 
-function technicalScore(scores) {
-  return scores.m5.score * 0.2 + scores.m15.score * 0.4 + scores.h1.score * 0.3 + scores.d1.score * 0.1;
+function weightedTimeframeScore(scores, picker) {
+  return picker(scores.m5) * 0.15 + picker(scores.m15) * 0.35 + picker(scores.h1) * 0.4 + picker(scores.d1) * 0.1;
 }
 
-function buildFactors(market, scores, context) {
-  const technical = technicalScore(scores);
+function vwapScore(last, session) {
+  if (!Number.isFinite(last) || !Number.isFinite(session?.vwap) || !session.vwap) return 0;
+  const distance = (last / session.vwap - 1) * 100;
+  if (Math.abs(distance) < 0.05) return 0;
+  return distance > 0 ? 100 : -100;
+}
+
+function technicalScore(scores, last, session) {
+  const structure = weightedTimeframeScore(scores, (item) => item.structure?.score ?? 0);
+  const momentum = weightedTimeframeScore(scores, (item) => item.momentumScore ?? 0);
+  return structure * 0.7 + vwapScore(last, session) * 0.2 + momentum * 0.1;
+}
+
+function marketBias(item) {
+  const weights = {
+    MNQ: { fundamental: 0.3, technical: 0.7 },
+    MGC: { fundamental: 0.4, technical: 0.6 },
+    MCL: { fundamental: 0.5, technical: 0.5 }
+  }[item.ticker];
+  const structureScores = [
+    { name: "Daily Structure", value: item.scores.d1.structure?.score ?? 0, weight: 0.25 },
+    { name: "4H Structure", value: item.scores.h4.structure?.score ?? 0, weight: 0.25 },
+    { name: "1H Structure", value: item.scores.h1.structure?.score ?? 0, weight: 0.25 },
+    { name: "15m Structure", value: item.scores.m15.structure?.score ?? 0, weight: 0.15 },
+    { name: "5m Structure", value: item.scores.m5.structure?.score ?? 0, weight: 0.1 }
+  ];
+  const structureScore = structureScores.reduce((sum, entry) => sum + entry.value * entry.weight, 0);
+  const connectedFundamentals = predictiveFactors(item.factors);
+  const fundamentalScore = connectedFundamentals.length ? combinedScore(connectedFundamentals) : 0;
+  const rawScore = structureScore * weights.technical + fundamentalScore * weights.fundamental;
+  const score = Math.round(clamp(rawScore / 10, -10, 10));
+  const conclusion = score >= 5
+    ? { label: "Bullish", chinese: "偏多", tone: "positive" }
+    : score >= 2
+      ? { label: "Slightly Bullish", chinese: "稍微偏多", tone: "positive" }
+      : score <= -5
+        ? { label: "Bearish", chinese: "偏空", tone: "negative" }
+        : score <= -2
+          ? { label: "Slightly Bearish", chinese: "稍微偏空", tone: "negative" }
+          : { label: "No Trade", chinese: "方向不明", tone: "neutral" };
+  const structureReasons = structureScores
+    .filter((entry) => entry.value !== 0)
+    .map((entry) => ({
+      name: entry.name,
+      points: Math.round(entry.value * entry.weight * weights.technical / 10)
+    }));
+  const fundamentalReasons = connectedFundamentals
+    .map((factor) => ({
+      name: factor.name,
+      points: Math.round(factor.score * factor.weight / 100 * weights.fundamental / 10)
+    }))
+    .filter((entry) => entry.points !== 0)
+    .sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+
+  return {
+    score,
+    ...conclusion,
+    reasons: [...structureReasons, ...fundamentalReasons].slice(0, 6),
+    weights
+  };
+}
+
+function buildFactors(market, scores, context, session, last) {
+  const technical = technicalScore(scores, last, session);
   const hasData = (item) => Number.isFinite(item?.value) && Number.isFinite(item?.change5d);
   const dxyScore = hasData(context.dxy) ? clamp(-context.dxy.change5d * 35, -100, 100) : null;
   const yieldScore = hasData(context.treasury10y) ? clamp(-context.treasury10y.change5d * 28, -100, 100) : null;
@@ -121,7 +254,7 @@ function buildFactors(market, scores, context) {
   const common = {
     technical: {
       name: "多週期價格結構", value: `${Math.round(technical) > 0 ? "+" : ""}${Math.round(technical)}`,
-      detail: "5m / 15m / 1h / 日線", score: technical, source: "Yahoo Finance"
+      detail: "HH/HL 70% · VWAP 20% · 動能 10%", score: technical, source: "Yahoo Finance"
     },
     dxy: {
       name: "美元指數 DXY", value: hasData(context.dxy) ? context.dxy.value.toFixed(2) : "暫無資料",
@@ -431,8 +564,8 @@ function weightRegime(market, context) {
   };
 }
 
-function buildCombinedDecision(market, forecast, scores, context) {
-  const technical = technicalScore(scores);
+function buildCombinedDecision(market, forecast, scores, context, session, last) {
+  const technical = technicalScore(scores, last, session);
   const regime = weightRegime(market, context);
   const score = forecast.score * regime.forecastWeight + technical * regime.currentWeight;
   const tone = score >= 20 ? "positive" : score <= -20 ? "negative" : "neutral";
@@ -502,19 +635,116 @@ function eventCountdown(distance) {
   return `${Math.floor(hours / 24)} 天 ${hours % 24} 小時`;
 }
 
+function highImpactEventInfo(event) {
+  const name = event.name || "";
+  if (/Consumer Price Index|CPI/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "高於預期",
+      lowerLabel: "低於預期",
+      higher: { MNQ: "Bearish", MGC: "Bearish", MCL: "Neutral" },
+      lower: { MNQ: "Bullish", MGC: "Bullish", MCL: "Neutral" }
+    };
+  }
+  if (/Nonfarm|NFP/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "高於預期",
+      lowerLabel: "低於預期",
+      higher: { MNQ: "Bearish", MGC: "Bearish", MCL: "Slightly Bullish" },
+      lower: { MNQ: "Bullish", MGC: "Bullish", MCL: "Slightly Bearish" }
+    };
+  }
+  if (/FOMC/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "偏鷹／利率路徑較高",
+      lowerLabel: "偏鴿／利率路徑較低",
+      higher: { MNQ: "Bearish", MGC: "Bearish", MCL: "Bearish" },
+      lower: { MNQ: "Bullish", MGC: "Bullish", MCL: "Bullish" }
+    };
+  }
+  if (/Core PCE|PCE/i.test(name)) {
+    return {
+      importance: 4,
+      higherLabel: "高於預期",
+      lowerLabel: "低於預期",
+      higher: { MNQ: "Bearish", MGC: "Bearish", MCL: "Neutral" },
+      lower: { MNQ: "Bullish", MGC: "Bullish", MCL: "Neutral" }
+    };
+  }
+  if (/EIA Crude Oil Inventories/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "庫存高於預期",
+      lowerLabel: "庫存低於預期",
+      higher: { MNQ: "Neutral", MGC: "Neutral", MCL: "Bearish" },
+      lower: { MNQ: "Neutral", MGC: "Neutral", MCL: "Bullish" }
+    };
+  }
+  if (/OPEC/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "增產／供給高於預期",
+      lowerLabel: "減產／供給低於預期",
+      higher: { MNQ: "Neutral", MGC: "Neutral", MCL: "Bearish" },
+      lower: { MNQ: "Neutral", MGC: "Neutral", MCL: "Bullish" }
+    };
+  }
+  if (/Middle East|Geopolitical/i.test(name)) {
+    return {
+      importance: 5,
+      higherLabel: "風險升高",
+      lowerLabel: "風險降溫",
+      higher: { MNQ: "Bearish", MGC: "Bullish", MCL: "Bullish" },
+      lower: { MNQ: "Bullish", MGC: "Bearish", MCL: "Bearish" }
+    };
+  }
+  return null;
+}
+
+function impactTone(value) {
+  if (/Bullish/i.test(value)) return "positive";
+  if (/Bearish/i.test(value)) return "negative";
+  return "neutral";
+}
+
 function renderEventCalendar() {
   const board = document.querySelector("#event-calendar");
   if (!board) return;
   const now = Date.now();
   const events = (state.context?.events || state.context?.nq?.events || [])
-    .map((event) => ({ ...event, distance: new Date(event.at).getTime() - now }))
+    .map((event) => ({
+      ...event,
+      distance: new Date(event.at).getTime() - now,
+      impact: highImpactEventInfo(event)
+    }))
+    .filter((event) => event.impact)
     .filter((event) => event.distance > -60 * 60 * 1000)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 12);
   if (!events.length) {
-    board.innerHTML = `<div class="event-empty">目前沒有已接入的重要數據事件。</div>`;
+    board.innerHTML = `<div class="event-empty">目前沒有已接入的高影響事件。</div>`;
     return;
   }
+  const nextToday = events.find((event) =>
+    event.distance > 0 &&
+    event.distance <= 24 * 60 * 60 * 1000 &&
+    /CPI|Nonfarm|NFP|FOMC|EIA Crude/i.test(event.name)
+  );
+  const highImpactBanner = nextToday
+    ? `<div class="high-impact-banner">
+        <span>HIGH IMPACT EVENT TODAY</span>
+        <strong>${nextToday.name}</strong>
+        <b>倒數 ${eventCountdown(nextToday.distance)}</b>
+      </div>`
+    : "";
+  const impactLine = (label, values) => `<div class="event-impact-line">
+    <strong>${label}</strong>
+    ${["MNQ", "MGC", "MCL"].map((ticker) =>
+      `<span class="${impactTone(values[ticker])}">${ticker}：${values[ticker]}</span>`
+    ).join("")}
+  </div>`;
   const eventRow = (event) => {
     const urgency = eventUrgency(event.distance);
     const date = new Intl.DateTimeFormat("zh-TW", {
@@ -522,11 +752,22 @@ function renderEventCalendar() {
       weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false
     }).format(new Date(event.at));
     const markets = (event.markets || ["MNQ", "MGC", "MCL"]).join(" · ");
-    return `<a class="event-row ${urgency.tone}" href="${event.url}" target="_blank" rel="noopener noreferrer">
+    const stars = "★".repeat(event.impact.importance) + "☆".repeat(5 - event.impact.importance);
+    return `<article class="event-row major-event ${urgency.tone}">
       <div class="event-time"><strong>${date}</strong><span>台灣時間</span></div>
-      <div class="event-name"><strong>${event.name}</strong><span>${event.source} · 影響 ${markets}</span></div>
+      <div class="event-name"><strong><a href="${event.url}" target="_blank" rel="noopener noreferrer">${event.name}</a></strong><span>${event.source} · 影響 ${markets}</span></div>
+      <div class="event-values">
+        <div><span>前值</span><b>${event.previous ?? "待更新"}</b></div>
+        <div><span>預期值</span><b>${event.expected ?? "待更新"}</b></div>
+        <div><span>實際值</span><b>${event.actual ?? "待公布"}</b></div>
+        <div><span>重要度</span><b class="event-stars">${stars}</b></div>
+      </div>
+      <div class="event-impact">
+        ${impactLine(`如果${event.impact.higherLabel}`, event.impact.higher)}
+        ${impactLine(`如果${event.impact.lowerLabel}`, event.impact.lower)}
+      </div>
       <div class="event-reminder"><b>${urgency.label}</b><span>倒數 ${eventCountdown(event.distance)}</span></div>
-    </a>`;
+    </article>`;
   };
   const nearEvents = events.filter((event) => event.distance <= 3 * 24 * 60 * 60 * 1000);
   const laterEvents = events.filter((event) => event.distance > 3 * 24 * 60 * 60 * 1000);
@@ -539,7 +780,7 @@ function renderEventCalendar() {
         <div class="later-event-grid">${laterEvents.map(eventRow).join("")}</div>
       </details>`
     : "";
-  board.innerHTML = `<div class="near-event-grid">${nearHtml}</div>${laterHtml}`;
+  board.innerHTML = `${highImpactBanner}<div class="near-event-grid">${nearHtml}</div>${laterHtml}`;
 }
 
 function finalDecision(scores, last, session, atrPercent, stale, factors) {
@@ -562,6 +803,7 @@ function analyze(market, payload, context) {
   const scores = {
     m5: scoreTimeframe(series.m5),
     m15: scoreTimeframe(series.m15),
+    h4: scoreTimeframe(aggregateBars(series.h1, 4)),
     h1: scoreTimeframe(series.h1),
     d1: scoreTimeframe(series.d1)
   };
@@ -572,14 +814,14 @@ function analyze(market, payload, context) {
   const atrPercent = atrValue / last * 100;
   const updatedTime = bars.at(-1).time;
   const stale = Date.now() - updatedTime > 45 * 60 * 1000;
-  const factors = buildFactors(market, scores, context);
+  const factors = buildFactors(market, scores, context, session, last);
   const predictionInputs = predictiveFactors(factors);
-  const observedFactor = [{ score: technicalScore(scores), weight: 100 }];
+  const observedFactor = [{ score: technicalScore(scores, last, session), weight: 100 }];
   const decision = finalDecision(scores, last, session, atrPercent, stale, observedFactor);
   const coverage = factorCoverage(factors);
   const predictiveCoverage = predictionInputs.length / Math.max(1, factors.slice(1).length);
   const forecast = buildForwardForecast(market, factors, context, predictiveCoverage);
-  const combined = buildCombinedDecision(market, forecast, scores, context);
+  const combined = buildCombinedDecision(market, forecast, scores, context, session, last);
   decision.reason += "｜只使用已形成的價格與技術資料";
   decision.strengthLabel = directionStrength(decision.tone, decision.confidence);
   const previousDay = series.d1.at(-2)?.close || session.open;
@@ -617,11 +859,30 @@ function sparkline(bars) {
 
 function timeframeChip(key, title, data, method) {
   const signal = label(data.score);
+  const structure = data.structure
+    ? `<i class="structure-tag ${data.structure.tone}">${data.structure.label}</i>`
+    : "";
   return `<div class="tf-chip">
     <span>${title}</span><em>${method}</em>
     <strong class="${signal.tone}">${signal.text}</strong>
     <small>${data.score > 0 ? "+" : ""}${data.score}</small>
+    ${structure}
   </div>`;
+}
+
+function renderMarketBias(item) {
+  const bias = marketBias(item);
+  const rows = bias.reasons.length
+    ? bias.reasons.map((reason) => `<li><span>${reason.name}</span><b>${reason.points > 0 ? "+" : ""}${reason.points}</b></li>`).join("")
+    : `<li><span>可用評分不足</span><b>0</b></li>`;
+  return `<section class="market-bias ${bias.tone}">
+    <div class="bias-head">
+      <div><span>${item.ticker} MARKET BIAS</span><strong>${bias.label}</strong><small>${bias.chinese}</small></div>
+      <div class="bias-score"><span>總分</span><b>${bias.score > 0 ? "+" : ""}${bias.score}</b></div>
+    </div>
+    <ul>${rows}</ul>
+    <p>權重：數據分析 ${(bias.weights.fundamental * 100).toFixed(0)}% / 市場結構 ${(bias.weights.technical * 100).toFixed(0)}%。分數標準：+5 以上 Bullish，-5 以下 Bearish，-1 到 +1 No Trade。</p>
+  </section>`;
 }
 
 function timeframeBlock(title, badge, description, scores, predicted = false) {
@@ -656,7 +917,10 @@ function renderHistoryCard(market, payload) {
     h1: scoreTimeframe(payload.series.h1),
     d1: scoreTimeframe(payload.series.d1)
   };
-  const technical = technicalScore(scores);
+  const historyBars = payload.series.m5;
+  const historyLast = historyBars.at(-1).close;
+  const historySession = sessionStats(historyBars);
+  const technical = technicalScore(scores, historyLast, historySession);
   const strength = strengthFromScore(technical);
   const atText = new Date(payload.at).toLocaleString("zh-TW", {
     year: "numeric", month: "2-digit", day: "2-digit",
@@ -673,7 +937,7 @@ function renderHistoryCard(market, payload) {
       ${timeframeChip("h1", "1 小時", scores.h1, "歷史 K 線")}
       ${timeframeChip("d1", "日線", scores.d1, "歷史 K 線")}
     </div>
-    <p>技術分析權重：5 分 20%＋15 分 40%＋1 小時 30%＋日線 10%。此回顧不納入當時新聞、FedWatch 或 Fear & Greed 歷史值。</p>
+    <p>技術分析權重：HH/HL、LH/LL 價格結構 70%＋VWAP 20%＋動能 10%。此回顧不納入當時新聞、FedWatch 或 Fear & Greed 歷史值。</p>
   </article>`;
 }
 
@@ -821,6 +1085,7 @@ function renderCard(item) {
       <div class="asset-name"><span>${item.english}</span><h2>${item.name}</h2></div>
       <div class="ticker">${item.ticker}</div>
     </div>
+    ${renderMarketBias(item)}
     <div class="decision-box combined-primary ${item.combined.tone}" style="--confidence:${item.combined.confidence}%">
       <div><span>綜合方向判斷｜數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%</span><strong>${item.combined.strengthLabel}</strong></div>
       <div class="confidence"><span>綜合強度</span><b>${item.combined.confidence}%</b><small class="direction-sync ${item.combined.statusTone}"><span>${item.combined.statusShort}</span><em>${item.combined.status}</em></small></div>
@@ -1022,7 +1287,7 @@ document.querySelector("#history-button").addEventListener("click", loadHistoryR
 document.querySelector("#history-clear-button").addEventListener("click", clearHistoryReview);
 setInterval(updateClock, 1000);
 setInterval(renderEventCalendar, 60 * 1000);
-setInterval(loadMarkets, 5 * 60 * 1000);
+setInterval(loadMarkets, 15 * 60 * 1000);
 setHistoryDefaults();
 updateClock();
 loadMarkets();
