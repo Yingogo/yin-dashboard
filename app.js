@@ -584,21 +584,27 @@ function buildCombinedDecision(market, forecast, scores, context, session, last)
   const score = forecast.score * regime.forecastWeight + technical * regime.currentWeight;
   const tone = score >= 20 ? "positive" : score <= -20 ? "negative" : "neutral";
   const confidence = Math.round(clamp(Math.abs(score), 20, 85));
+  const finalLabel = directionStrength(tone, confidence);
   const technicalTone = technical >= 20 ? "偏多" : technical <= -20 ? "偏空" : "中性";
   const forecastTone = forecast.score >= 20 ? "偏多" : forecast.score <= -20 ? "偏空" : "中性";
   const agreement = technicalTone === forecastTone && technicalTone !== "中性";
   const conflict = technicalTone !== "中性" && forecastTone !== "中性" && technicalTone !== forecastTone;
   const statusShort = agreement ? "同向" : conflict ? "分歧" : "尚未同向";
   const statusTone = agreement ? "aligned" : conflict ? "conflict" : "mixed";
+  const status = agreement
+    ? `數據分析（預測資料）與技術分析（目前資料）同向，綜合結果為「${finalLabel}」。`
+    : conflict
+      ? `數據分析（預測資料）與技術分析（目前資料）分歧，但依權重後綜合結果為「${finalLabel}」。`
+      : `部分訊號尚未同向，依權重後綜合結果為「${finalLabel}」。`;
   return {
     ...regime,
     score,
     tone,
     confidence,
-    strengthLabel: directionStrength(tone, confidence),
+    strengthLabel: finalLabel,
     statusShort,
     statusTone,
-    status: agreement ? "數據分析（預測資料）與技術分析（目前資料）同向" : conflict ? "數據分析（預測資料）與技術分析（目前資料）分歧" : "部分訊號尚未同向",
+    status,
     reason: `數據分析（預測資料）${forecastTone}（${Math.round(regime.forecastWeight * 100)}%），技術分析（目前資料）${technicalTone}（${Math.round(regime.currentWeight * 100)}%）`
   };
 }
@@ -767,13 +773,16 @@ function renderEventCalendar() {
     }).format(new Date(event.at));
     const markets = (event.markets || ["MNQ", "MGC", "MCL"]).join(" · ");
     const stars = "★".repeat(event.impact.importance) + "☆".repeat(5 - event.impact.importance);
+    const previousValue = event.previous ?? "未接共識來源";
+    const expectedValue = event.expected ?? "未接共識來源";
+    const actualValue = event.actual ?? (event.distance <= 0 ? "需人工確認" : "待公布");
     return `<article class="event-row major-event ${urgency.tone}">
       <div class="event-time"><strong>${date}</strong><span>台灣時間</span></div>
       <div class="event-name"><strong><a href="${event.url}" target="_blank" rel="noopener noreferrer">${event.name}</a></strong><span>${event.source} · 影響 ${markets}</span></div>
       <div class="event-values">
-        <div><span>前值</span><b>${event.previous ?? "待更新"}</b></div>
-        <div><span>預期值</span><b>${event.expected ?? "待更新"}</b></div>
-        <div><span>實際值</span><b>${event.actual ?? "待公布"}</b></div>
+        <div><span>前值</span><b>${previousValue}</b></div>
+        <div><span>預期值</span><b>${expectedValue}</b></div>
+        <div><span>實際值</span><b>${actualValue}</b></div>
         <div><span>重要度</span><b class="event-stars">${stars}</b></div>
       </div>
       <div class="event-impact">
@@ -920,14 +929,52 @@ function renderMarketBias(item) {
   </section>`;
 }
 
+function shortTermWarning(item) {
+  const m5 = item.scores.m5?.score ?? 0;
+  const m15 = item.scores.m15?.score ?? 0;
+  const h1 = item.scores.h1?.score ?? 0;
+  const vwap = vwapScore(item.last, item.session);
+  const data = item.forecast?.score ?? item.factorScore ?? 0;
+  const score = m5 * 0.25 + m15 * 0.35 + vwap * 0.25 + data * 0.15;
+  const tone = score >= 20 ? "positive" : score <= -20 ? "negative" : "neutral";
+  const confidence = Math.round(clamp(Math.abs(score), 20, 85));
+  const label = directionStrength(tone, confidence);
+  const details = [
+    `5M ${impactLabel(m5).text}`,
+    `15M ${impactLabel(m15).text}`,
+    `VWAP ${vwap > 0 ? "站上" : vwap < 0 ? "跌破" : "貼近"}`,
+    `數據分析 ${impactLabel(data).text}`
+  ];
+  const caution = h1 >= 20 && tone === "negative"
+    ? "但 1H 尚偏多，這屬於短線轉弱預警，需等結構延續。"
+    : h1 <= -20 && tone === "positive"
+      ? "但 1H 尚偏空，這屬於短線反彈預警，需等結構延續。"
+      : "若 5M/15M 與 VWAP 持續同向，預警可信度提高。";
+  return { score, tone, confidence, label, details, caution };
+}
+
+function renderShortTermWarning(item) {
+  const warning = shortTermWarning(item);
+  return `<div class="short-warning ${warning.tone}">
+    <div>
+      <span>短線預警｜5M + 15M + VWAP + 數據分析</span>
+      <strong>${warning.label}</strong>
+      <p>${warning.details.join("｜")}；預警分數 ${warning.score >= 0 ? "+" : ""}${Math.round(warning.score)}。</p>
+    </div>
+    <small>${warning.caution}</small>
+  </div>`;
+}
+
 function renderDecisionSupport(item) {
   return `<section class="decision-support decision-primary">
     <div class="support-body">
       <div class="support-summary ${item.combined.tone}">
-        <span>綜合結果｜數據分析與技術分析是否同向</span>
-        <b>${item.combined.status}</b>
-        <p>數據分析（預測資料）${Math.round(item.combined.forecastWeight * 100)}%＋技術分析（目前資料）${Math.round(item.combined.currentWeight * 100)}%；綜合強度 ${item.combined.confidence}%。</p>
+        <span>綜合結果</span>
+        <strong class="combined-final">${item.combined.strengthLabel}</strong>
+        <b>${item.combined.statusShort}｜${item.combined.status}</b>
+        <p>${item.combined.reason}；綜合分數 ${item.combined.score >= 0 ? "+" : ""}${Math.round(item.combined.score)}，綜合強度 ${item.combined.confidence}%。</p>
       </div>
+      ${renderShortTermWarning(item)}
       <div class="signal-comparison signal-comparison-primary">
         ${timeframeBlock("技術分析（目前資料）", "CURRENT", "HH/HL、LH/LL、VWAP、動能", item.scores)}
         ${timeframeBlock("數據分析（預測資料）", "FORECAST", "重大事件、殖利率、美元、VIX、領導資產", item.predictiveScores, true)}
