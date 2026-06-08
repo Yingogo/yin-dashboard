@@ -977,21 +977,26 @@ function renderDecisionSupport(item) {
       ${renderShortTermWarning(item)}
       <div class="signal-comparison signal-comparison-primary">
         ${timeframeBlock("技術分析（目前資料）", "CURRENT", "HH/HL、LH/LL、VWAP、動能", item.scores)}
+      </div>
+      <details class="asset-more">
+        <summary><span>數據分析與總體經濟預測</span><strong>FORECAST</strong></summary>
+        <div class="asset-more-body">
         ${timeframeBlock("數據分析（預測資料）", "FORECAST", "重大事件、殖利率、美元、VIX、領導資產", item.predictiveScores, true)}
-      </div>
-      <div class="forecast-box">
-        <div class="forecast-head">
-          <div><span>總體經濟預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
-          <small>模型情境權重，非勝率</small>
+          <div class="forecast-box">
+            <div class="forecast-head">
+              <div><span>總體經濟預測</span><strong class="${item.forecast.tone}">${item.forecast.label}</strong></div>
+              <small>模型情境權重，非勝率</small>
+            </div>
+            <div class="scenario-bars">
+              <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>總體經濟預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
+              <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>總體經濟預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
+              <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>總體經濟預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
+            </div>
+            <p><b>因為：</b>${item.forecast.basis}。${item.forecast.event}</p>
+            <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
+          </div>
         </div>
-        <div class="scenario-bars">
-          <div class="bullish" style="--scenario:${item.forecast.bullish}%"><span>偏多<em>總體經濟預測</em></span><i></i><b>${item.forecast.bullish}%</b></div>
-          <div class="sideways" style="--scenario:${item.forecast.neutral}%"><span>震盪<em>總體經濟預測</em></span><i></i><b>${item.forecast.neutral}%</b></div>
-          <div class="bearish" style="--scenario:${item.forecast.bearish}%"><span>偏空<em>總體經濟預測</em></span><i></i><b>${item.forecast.bearish}%</b></div>
-        </div>
-        <p><b>因為：</b>${item.forecast.basis}。${item.forecast.event}</p>
-        <p class="forecast-invalidation"><b>失效條件：</b>${item.forecast.invalidation}</p>
-      </div>
+      </details>
     </div>
   </section>`;
 }
@@ -1197,19 +1202,24 @@ function renderCard(item) {
       <div class="ticker">${item.ticker}</div>
     </div>
     ${renderDecisionSupport(item)}
-    <div class="price-line">
-      <strong class="last-price">${formatPrice(item.last, item.decimals)}</strong>
-      <span class="daily-change ${changeTone}">${item.changePercent >= 0 ? "▲" : "▼"} ${Math.abs(item.changePercent).toFixed(2)}%</span>
-    </div>
-    ${sparkline(item.bars)}
-    <div class="levels intraday-levels">
-      <div class="level"><span>VWAP</span><b class="${vwapTone}">${formatPrice(item.session.vwap, item.decimals)}</b></div>
-      <div class="level"><span>今日高 / 低</span><b>${formatPrice(item.session.high, item.decimals)} / ${formatPrice(item.session.low, item.decimals)}</b></div>
-      <div class="level"><span>開盤區間高</span><b>${formatPrice(item.session.openingHigh, item.decimals)}</b></div>
-      <div class="level"><span>開盤區間低</span><b>${formatPrice(item.session.openingLow, item.decimals)}</b></div>
-    </div>
-    <div class="card-foot">${item.stale ? "休市 / 延遲資料" : "行情更新中"} · 15m ATR ${formatPrice(item.atrValue, item.decimals)} · 最新 K 棒 ${new Date(item.updatedTime).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
-    ${renderFactorDetails(item)}
+    <details class="asset-more">
+      <summary><span>價格、VWAP 與完整影響因素</span><strong>DETAILS</strong></summary>
+      <div class="asset-more-body">
+        <div class="price-line">
+          <strong class="last-price">${formatPrice(item.last, item.decimals)}</strong>
+          <span class="daily-change ${changeTone}">${item.changePercent >= 0 ? "▲" : "▼"} ${Math.abs(item.changePercent).toFixed(2)}%</span>
+        </div>
+        ${sparkline(item.bars)}
+        <div class="levels intraday-levels">
+          <div class="level"><span>VWAP</span><b class="${vwapTone}">${formatPrice(item.session.vwap, item.decimals)}</b></div>
+          <div class="level"><span>今日高 / 低</span><b>${formatPrice(item.session.high, item.decimals)} / ${formatPrice(item.session.low, item.decimals)}</b></div>
+          <div class="level"><span>開盤區間高</span><b>${formatPrice(item.session.openingHigh, item.decimals)}</b></div>
+          <div class="level"><span>開盤區間低</span><b>${formatPrice(item.session.openingLow, item.decimals)}</b></div>
+        </div>
+        <div class="card-foot">${item.stale ? "休市 / 延遲資料" : "行情更新中"} · 15m ATR ${formatPrice(item.atrValue, item.decimals)} · 最新 K 棒 ${new Date(item.updatedTime).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+        ${renderFactorDetails(item)}
+      </div>
+    </details>
   </article>`;
 }
 

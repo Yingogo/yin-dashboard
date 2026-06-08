@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#050809" />
     <title>YIN Dashboard</title>
-    <link rel="stylesheet" href="/styles.css?v=46" />
+    <link rel="stylesheet" href="/styles.css?v=47" />
   </head>
   <body>
     <div class="noise"></div>
@@ -40,11 +40,12 @@
         <p>平常使用技術分析（目前資料）70%／數據分析（預測資料）30%；指定重大事件進入 72 小時窗口時切換為技術分析（目前資料）40%／數據分析（預測資料）60%。黃金亦會依 DXY 與 10Y Yield 重大變動切換。</p>
       </section>
 
-      <section class="event-panel" aria-label="Upcoming economic data releases">
-        <div class="event-panel-head">
+      <details class="event-panel" aria-label="Upcoming economic data releases">
+        <summary class="event-panel-head">
           <div>
             <p class="eyebrow">UPCOMING DATA RELEASES</p>
             <h2>高影響事件與公布前提醒</h2>
+            <small>點擊展開查看事件、前值、預期值、實際值與公布前影響分析</small>
           </div>
           <div class="event-links">
             <span>常用資料來源</span>
@@ -52,15 +53,16 @@
             <a href="https://www.reuters.com/business/" target="_blank" rel="noopener noreferrer">即時財金新聞（必看）｜Reuters ↗</a>
             <a href="https://www.bls.gov/news.release/" target="_blank" rel="noopener noreferrer">非農／CPI／PPI｜BLS ↗</a>
             <a href="https://www.cboe.com/tradable-products/vix" target="_blank" rel="noopener noreferrer">恐慌指數官方｜CBOE VIX ↗</a>
+            <a href="https://tradingeconomics.com/united-states/calendar" target="_blank" rel="noopener noreferrer">前值／預期／實際｜Trading Economics ↗</a>
             <a href="https://rili.jin10.com/" target="_blank" rel="noopener noreferrer">金十日曆 ↗</a>
             <a href="https://www.bls.gov/schedule/news_release/bls.ics" target="_blank" rel="noopener noreferrer">BLS 行事曆 ↗</a>
           </div>
-        </div>
+        </summary>
         <div id="event-calendar" class="event-calendar">
           <div class="event-empty">正在讀取重要數據行事曆…</div>
         </div>
-        <p class="event-note">只顯示 CPI、NFP、FOMC、PCE、EIA、OPEC 或重大地緣政治事件。前值與預期值若尚未接入會顯示待更新；公布時間仍以官方臨時更新為準。</p>
-      </section>
+        <p class="event-note">只顯示 CPI、NFP、FOMC、PCE、EIA、OPEC 或重大地緣政治事件。目前事件表尚未串接共識值來源時，前值與預期值會顯示「未接共識來源」；公布時間仍以官方臨時更新為準。</p>
+      </details>
 
       <section class="history-panel" aria-label="Historical technical review">
         <div class="history-head">
@@ -139,6 +141,6 @@
         <p>行情與資料可能延遲；休市時顯示上一交易時段狀態。</p>
       </footer>
     </main>
-    <script src="/app.js?v=46"></script>
+    <script src="/app.js?v=47"></script>
   </body>
 </html>

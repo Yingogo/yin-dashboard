@@ -410,13 +410,35 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   background: linear-gradient(135deg, rgba(44, 140, 255, .07), rgba(9, 14, 21, .96) 42%);
 }
 .event-panel-head {
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 18px;
   align-items: flex-end;
   margin-bottom: 12px;
+  padding-right: 28px;
+  cursor: pointer;
+  list-style: none;
 }
+.event-panel-head::-webkit-details-marker { display: none; }
+.event-panel-head::after {
+  content: "▼";
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  color: var(--blue);
+  font: 900 11px Consolas, monospace;
+  transition: transform .18s;
+}
+.event-panel[open] .event-panel-head::after { transform: rotate(180deg); }
 .event-panel-head h2 { margin: 3px 0 0; color: var(--text); font-size: 17px; }
+.event-panel-head small {
+  display: block;
+  margin-top: 5px;
+  color: #d5e0e9;
+  font-size: 11px;
+  line-height: 1.45;
+}
 .event-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 13px; font-size: 9px; }
 .event-links span { color: #b8c8d6; }
 .event-links a { color: var(--blue); text-decoration: none; }
@@ -1274,6 +1296,52 @@ button:disabled { opacity: .5; cursor: wait; transform: none; }
   margin-bottom: 10px;
 }
 .signal-comparison-primary { margin: -5px 0 16px; }
+.asset-more {
+  margin: 12px 0 0;
+  border: 1px solid rgba(44, 140, 255, .22);
+  border-radius: 8px;
+  background: rgba(5, 10, 15, .42);
+}
+.asset-more > summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 38px 11px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.asset-more > summary::-webkit-details-marker { display: none; }
+.asset-more > summary::after {
+  content: "▼";
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  color: var(--blue);
+  font: 900 10px Consolas, monospace;
+  transform: translateY(-50%);
+  transition: transform .18s;
+}
+.asset-more[open] > summary::after { transform: translateY(-50%) rotate(180deg); }
+.asset-more summary span {
+  color: #f4f8fc;
+  font-weight: 900;
+  font-size: 12px;
+}
+.asset-more summary strong {
+  color: var(--blue);
+  font: 900 10px Consolas, monospace;
+  letter-spacing: .08em;
+}
+.asset-more-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid rgba(184, 200, 214, .12);
+}
+.asset-more-body .timeframe-block,
+.asset-more-body .forecast-box {
+  margin-top: 12px;
+}
 .timeframe-block {
   padding: 10px;
   border: 1px solid rgba(25, 242, 162, .2);
